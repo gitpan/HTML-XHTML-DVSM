@@ -5,7 +5,7 @@
 package HTML::XHTML::DVSM;
 use Carp;
 BEGIN {
-    $VERSION = '1.0';
+    $VERSION = '1.1';
 }
 use vars qw( $VERSION );
 use strict;
@@ -134,6 +134,10 @@ sub sbAnalyseContents {
         $$subs .= $1;
     }
     $$subs .= "\nreturn 1;\n";
+    if ( $self->{DEBUG} && open( D, "> /tmp/dvsmsubs$$.pl") ) {
+        print D $$subs;
+        close( D );
+    }
     return 1;
 }
 
@@ -423,7 +427,7 @@ sub sbGetAttribs {
                 $value = $1;
                 $attribstr = $';
             }
-        }
+        }       
         $$attribs{$attrib} = $value;
     }
     $$attribstr = $save_attribstr;
@@ -441,7 +445,14 @@ sub sbParseMarkup {
     $self->sbOnTag( \$root, \$root_type, \"", \"", {}, \"" , \"" );
     while ( $$contents =~ m#<#gm ) {     
         $$contents = substr( $$contents, pos( $$contents ) );
-        if ( $$contents =~ m#(^!--.*?--)>([^<]*)#s ) { # <!-- ... --> ...
+        if ( $$contents =~ m#(^!\[CDATA\[.*?\]\])>([^<]*)#s ) { # //<![CDATA] ... ]]> ...
+            my $tag = $1;
+            my $orphantext = $2;          
+            my $type = $COMMENT;
+            $$contents = $';
+            $self->sbOnTag( \$tag, \$type, \"", \"", {}, \"" , \$orphantext );
+        }
+        elsif ( $$contents =~ m#(^!--.*?--)>([^<]*)#s ) { # <!-- ... --> ...
             my $tag = $1;
             my $orphantext = $2;          
             my $type = $COMMENT;
@@ -462,18 +473,6 @@ sub sbParseMarkup {
             $$contents = $';
             $self->sbOnTag( \$tag, \$type, \"", \"", {}, \"" , \$orphantext );
         }
-#        elsif ( $$contents =~ m#(^[^>]+)\/>([^<]*)#s ) { # <tagname/>...
-#            my $tag = $1;
-#die( "TAG=$tag");            
-#            my $orphantext = $2;
-#            $tag = $self->sbTrim( $tag );   
-#            my $type = $ELEMENT;
-#            my $attribstr = "";
-#            my %attribs = ();
-#            $$contents = $';
-#            $self->sbGetAttribs( \$tag, \$attribstr, \%attribs );
-#            $self->sbOnTag( \$tag, \$type, \"/", \$attribstr, \%attribs, \"", \$orphantext );
-#        }
         elsif ( $$contents =~ m#^\s*\/([^>]+)>([^<]*)#s ) { # </tagname>...
             my $tag = $1;
             my $orphantext = $2;
@@ -515,6 +514,8 @@ sub sbPrintTag {
     my $attribs = $$tag{attribs};
     print $stream "<$$tag{tag}";
     foreach my $attrib ( keys %$attribs ) {
+        next if ( ! defined( $attrib ));
+        $$attribs{$attrib} = "" if ( ! defined( $$attribs{$attrib} ) );
         print $stream " $attrib=\"$$attribs{$attrib}\"";
     }
     print $stream "$$tag{tagend}>$$text";
@@ -832,9 +833,10 @@ sub sbInitPage {
     $cachename = $page if ( ! $cachename );
     my $cachedmarkup = $$sbMarkupCache{$cachename} if ( $cachename );
     my $subs = $$sbSubsCache{$cachename} if ( $cachename );
+    $subs = "" if ( ! defined( $subs ));
     
-    if ( $cachedmarkup && $subs ) {
-        #warn( "Getting cached version for $cachename" );
+    if ( $cachedmarkup ) {
+        #warn( "$$ Getting cached version for $cachename" );
         $self->{Markup} = $cachedmarkup;
         $self->{Subs} = $subs;
         my $sbSubs = $$subs;
@@ -847,7 +849,7 @@ sub sbInitPage {
         }
     }
     else {
-        #warn( "First time for $cachename" );
+        #warn( "$$ First time for $cachename" );
         my $sbContents;
         my $sbInstructions;
         my $sbSubs;
@@ -861,7 +863,7 @@ sub sbInitPage {
         }
         $self->sbParseInstructions( \$sbInstructions, $self->{Instructions} );
         $self->sbParseMarkup( \$sbContents );
-        my %copymarkup = %{$self->{Markup}};
+        my %copymarkup = %{$self->{Markup}};        
         ${$self->{MarkupCache}}{$cachename} = \%copymarkup;
         my $copySubs = $sbSubs;
         ${$self->{SubsCache}}{$cachename} = \$copySubs;
@@ -921,33 +923,12 @@ sub sbFilename {
 
 return 1;
 
-#sub sbRequire {
-#    my $class = shift;
-#    my $library = shift;
-#    my $location = shift;
-#    #warn( "sbRequire: $library=$INC{$library}" );  
-#    if ( ! $INC{$library} || ! $location ) {
-#        require $library;
-#    }
-#    else {
-#        delete( $INC{$library} );
-#        do $location if ( $location );
-#        $INC{ $library } = $location;
-#        warn( "sbRequire: Changed $library to $INC{$library}" );
-#    }
-#}
-#
-#sub sbUse {
-#    my $class = shift;
-#    my $module = shift;
-#    require "$module.pm";
-#    import $module;
-#}
+
 __END__
 
 =head1 NAME
 
-HTML::XHTML::DVSM - Dynamic Visual Software Modelling, Story Board animation module for XML/XHTML
+HTML::XHTML::DVSM - Dynamic Visual Software Modelling, XML/XHTML template system that does not screw up your templates.
 
 =head1 SYNOPSIS
 
@@ -1102,17 +1083,17 @@ Shows how to use HTML::XHTML::DVSM to animate getstarted.html
     #!/usr/bin/perl -w
     package sb_getstarted;
     use HTML::XHTML::DVSM;
-    my $scriptdir = "$0/..";
+    my $scriptdir = "."; #may have to change this for mod_perl
     my $htmldir = "$scriptdir";
-    our $sb;
+    our $sb; #for mod_perl
     sub getSB { return $sb; }
     $sb = HTML::XHTML::DVSM->new( SCRIPT_TAG => "DVSM", SUBS_TAG => "DSUBS" ) if ( ! $sb );
     $sb->sbInit();
     #$sb->sbClearCache(); #can be used if modify html and using mod_perl
-    $sb->sbSetEvalPackage( "sb_getstarted" );
+    $sb->sbSetEvalPackage( "sb_getstarted" ); #when running code in getstarted.html this is the package name
     $sb->sbSetStopOnError( 1 );
     eval {
-        $sb->sbInitPage( "", "$scriptdir", "getstarted.html", "" );
+        $sb->sbInitPage( "", "$htmldir", "getstarted.html", "" );
         $sb->sbPrintDocument();
     };
     if ( $@ ) {
@@ -1122,11 +1103,22 @@ Shows how to use HTML::XHTML::DVSM to animate getstarted.html
 
 =item Instructions
 
-Put both getstarted.html and getstarted.pl in your cgi-bin directory.  Then run the demo
-by loading the getstarted.pl url in your browser: e.g. http://localhost/cgi-bin/getstarted.pl.
+Put both getstarted.html and getstarted.pl in the same directory.  
+cd to that directory.
 
+Run:
+
+    perl getstarted.pl
+    
+and view the output. 
+
+Once you have viewed the output try putting both files in your cgi-bin directory.  Then run the demo
+by loading the getstarted.pl url in your browser: e.g. http://localhost/cgi-bin/getstarted.pl.
 Make sure getstarted.pl has execute permissions and that C<#!/usr/bin/perl> is the correct
 path for perl - you may have to change this shell directive to give the correct path.
+
+Notice that getstarted.html is good html that any browser can load.  The html before transformation
+is not corrupted by the DVSM instructions, unlike almost all other html template systems.
 
 =back
 
@@ -1401,14 +1393,9 @@ Example:
 Result:
 
     <html><body>
-    <table>
-    <tr><th>Customer Number</th><th>Customer Name</th></tr>
-    <tbody>
-    <tr name="customers"><td name="custid">148842</td><td name="custname">Mr J Smith</td></tr>
-    <tr name="customers"><td name="custid">484848</td><td name="custname">Mrs P Cook</td></tr>
-    <tr name="customers"><td name="custid">848488</td><td name="custname">Ms S Jones</td></tr>
-    </tbody>
-    </table>
+    <p>This paragraph always happens</p>
+    <p id="datepara_even">This paragraph only happens if the date of the month
+    (<span id="thedate">12/01/2009</span>) is an even number</p>
     </body></html>
 
 =item while
@@ -1481,6 +1468,12 @@ generating dynamic web sites. But other applications would be
 generating XUL gui screens (using XULs such as thinlet), or B2B XML
 documents.
 
+The unique thing about DVSM is it does NOT corrupt your original XML/XHTML. After XHTML is 
+developed to run dynamically in your website you can still load the template xhtml into your
+dreamweaver or other html tool and it will look exactly the same as it did before.  You can
+do a storyboard of your whole website and the story board will be preserved even when it is
+used as a template for your dynamic, live website.
+
 =head1 PREREQUISITES
 
 Other than for the use of C<strict> there are actually no dependancies in HTML::XHTML::DVSM.
@@ -1489,6 +1482,8 @@ should there be demand, it would probably be amended to allow the use of a prope
 parser and perhaps a robust mini-language compiler/interpreter.  But the aim is to
 allow HTML::XHTML::DVSM to be used with the most primitive web hoster.  If there is perl, HTML::XHTML::DVSM
 will run.
+
+IO::String is required for the unit tests.  It is not needed by HTML::XHTML::DVSM itself.
 
 =head1 OSNAMES
 
@@ -1500,6 +1495,6 @@ any
 
 =head1 AUTHORS
 
-Copyright © 2007 Stuart Butler (stuart.butler@dvsm.co.uk) and Grant Holman (grant.holman@dvsm.co.uk)
+Copyright © 2007-2009 Stuart Butler (stuart.butler@dvsm.co.uk) and Grant Holman (grant.holman@dvsm.co.uk)
 
 =cut

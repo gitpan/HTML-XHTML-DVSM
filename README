@@ -1,4 +1,4 @@
-HTML/XHTML/DVSM version 1.0
+HTML/XHTML/DVSM version 1.1
 ===========================
 
 HTML::XHTML::DVSM A perl module that uses a simple scripting language embedded 
@@ -22,10 +22,16 @@ This module requires these other modules and libraries:
 
   strict
   Carp
+  
+Unit tests require IO:String module.  
+
+CHANGES
+
+V1.1 handles CDATA sections in XHTML
 
 COPYRIGHT AND LICENCE
 
-Copyright (C) 2007 Stuart Butler (stuart.butler@dvsm.co.uk) 
+Copyright (C) 2007-2009 Stuart Butler (stuart.butler@dvsm.co.uk) 
 and Grant Holman (grant.holman@dvsm.co.uk).  All rights reserved. 
 This program is free software; you can redistribute it and/or modify it under the 
 same terms as Perl itself.
