@@ -8,5 +8,5 @@ WriteMakefile(
     'PREREQ_PM'     => { "IO::String" => 0 }, # e.g., Module::Name => 1.1
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM => 'DVSM.pm', # retrieve abstract from module
-       AUTHOR     => 'Stuart Butler <stuartb@dvsm.co.uk>') : ()),
+       AUTHOR     => 'Stuart Butler <perldev@yahoo.co.uk>') : ()),
 );

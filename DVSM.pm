@@ -1,11 +1,11 @@
 #!/usr/bin/perl
-# Copyright © 2007 Stuart Butler (stuart.butler@dvsm.co.uk) and Grant Holman (grant.holman@dvsm.co.uk)
+# Copyright © 2007-2010 Stuart Butler (perldev@yahoo.co.uk) and Grant Holman (grant@collegeroad.eclipse.co.uk).
 # This program is distributed under the terms of the The GNU General Public License (GPL), which can be viewed at http://www.opensource.org/licenses/gpl-license.php
 #
 package HTML::XHTML::DVSM;
 use Carp;
 BEGIN {
-    $VERSION = '1.1';
+    $VERSION = '1.2';
 }
 use vars qw( $VERSION );
 use strict;
@@ -19,6 +19,11 @@ sub new {
     my $self = {};
     bless($self, $class );
     $self->sbInit();
+    $self->{MarkupCache} = {};
+    $self->{SubsCache} = {};
+    $self->{StopOnError} = 0;
+    $self->{EvalPackage} = "main";
+    $self->{Stream} = *STDOUT if ( ! $self->{Stream} );
     return $self;
 }
 
@@ -883,12 +888,7 @@ sub sbInit() {
     $self->{Tagparents} = \@sbTagparents;
     $self->{Instrstack} = \@sbInstrstack;
     $self->{LastError} = "";
-    $self->{StopOnError} = 0;
     $self->{CurrentTag} = 0;
-    $self->{MarkupCache} = {};
-    $self->{SubsCache} = {};
-    $self->{EvalPackage} = "main";
-    $self->{Stream} = *STDOUT if ( ! $self->{Stream} );
 }
 
 sub sbGetPath {
@@ -928,7 +928,7 @@ __END__
 
 =head1 NAME
 
-HTML::XHTML::DVSM - Dynamic Visual Software Modelling, XML/XHTML template system that does not screw up your templates.
+HTML::XHTML::DVSM - Dynamic Visual Software Modelling, XML/XHTML template system that does not screw up your templates. V1.2
 
 =head1 SYNOPSIS
 
@@ -1495,6 +1495,6 @@ any
 
 =head1 AUTHORS
 
-Copyright © 2007-2009 Stuart Butler (stuart.butler@dvsm.co.uk) and Grant Holman (grant.holman@dvsm.co.uk)
+Copyright © 2007-2010 Stuart Butler (perldev@yahoo.co.uk) and Grant Holman (grant@collegeroad.eclipse.co.uk).
 
 =cut

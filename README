@@ -16,6 +16,13 @@ To install this module type the following:
    make test
    make install
 
+On windows install the dmake ppm package and then:
+
+   perl Makefile.PL
+   dmake
+   dmake test
+   dmake install
+
 DEPENDENCIES
 
 This module requires these other modules and libraries:
@@ -28,10 +35,11 @@ Unit tests require IO:String module.
 CHANGES
 
 V1.1 handles CDATA sections in XHTML
+V1.2 don't cleardown cache and other server level variables in sbInit() to aid mod_perl
 
 COPYRIGHT AND LICENCE
 
-Copyright (C) 2007-2009 Stuart Butler (stuart.butler@dvsm.co.uk) 
-and Grant Holman (grant.holman@dvsm.co.uk).  All rights reserved. 
+Copyright (C) 2007-2010 Stuart Butler (perldev@yahoo.co.uk) 
+and Grant Holman (grant@collegeroad.eclipse.co.uk).  All rights reserved. 
 This program is free software; you can redistribute it and/or modify it under the 
 same terms as Perl itself.
